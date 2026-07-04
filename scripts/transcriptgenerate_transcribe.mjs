@@ -109,8 +109,8 @@ async function main() {
   const email = args.email || process.env.TG_EMAIL;
   const password = args.password || process.env.TG_PASSWORD;
   const targetLanguage = args["target-language"] || "auto";
+  const resumeTaskId = args["task-id"];  // resume mode: skip createTask, poll existing task
 
-  if (!url) throw new Error("Missing --url");
   if (!email || !password) throw new Error("Missing --email/--password or TG_EMAIL/TG_PASSWORD");
 
   const login = await apiRequest("/login", {
@@ -127,16 +127,30 @@ async function main() {
     throw new Error(`Login failed: ${login.msg || JSON.stringify(login)}`);
   }
 
-  let task = await apiRequest("/transcript/createTask", {
-    method: "POST",
-    token: login.token,
-    body: {
-      appType: "transcript",
-      workUrl: url,
-      type: "text",
-      targetLanguage,
-    },
-  });
+  let task;
+  if (resumeTaskId) {
+    // Resume mode: query existing task, don't create a new one
+    if (!url) throw new Error("Missing --url (needed for output metadata)");
+    const queried = await apiRequest("/transcript/queryTask", {
+      token: login.token,
+      params: { taskId: resumeTaskId },
+    });
+    if (queried.code !== 200) throw new Error(`Query failed: ${queried.msg || JSON.stringify(queried)}`);
+    task = { code: 200, data: queried.data };
+  } else {
+    if (!url) throw new Error("Missing --url");
+    task = await apiRequest("/transcript/createTask", {
+      method: "POST",
+      token: login.token,
+      retries: 1,  // NEVER retry: duplicate tasks = duplicate charges
+      body: {
+        appType: "transcript",
+        workUrl: url,
+        type: "text",
+        targetLanguage,
+      },
+    });
+  }
   if (task.code !== 200 || !task.data?.taskId) {
     throw new Error(`Create task failed: ${task.msg || JSON.stringify(task)}`);
   }
