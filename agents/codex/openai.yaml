@@ -1,0 +1,9 @@
+interface:
+  display_name: "Video to Text"
+  # 中文: "视频转写"
+  short_description: "Extract text from Douyin, Bilibili, Xiaohongshu, YouTube, TikTok, X, and more"
+  # 中文: "从抖音/B站/小红书/YouTube/TikTok/X等平台提取视频文案"
+  default_prompt: "Use $video-to-text to transcribe this video link"
+  # 中文: "使用 $video-to-text 转写这个视频链接"
+policy:
+  allow_implicit_invocation: true
