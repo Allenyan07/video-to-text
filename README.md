@@ -198,6 +198,8 @@ B站链接（支持 b23.tv / BV号 / 完整URL）
 路径 A（TranscriptGenerate）免费额度 10 分钟/月，超出约 ¥29/月，以[官网](https://www.transcriptgenerate.com)为准。路径 B（B站本地转写）完全免费。
 
 > ⚠️ 免责声明：本 Skill 非 TranscriptGenerate 官方产品，我们只是该网站的用户，觉得顺手所以做了这个自动化工具。付费、价格、服务变动等请以官方网站为准。
+>
+> **技术实现说明**：本工具通过逆向 TranscriptGenerate 网站前端调用的内部 API 接口（登录、创建任务、查询结果）实现自动化，并非其官方公开 API。如果网站修改了接口地址、加密方式或调用规则，本工具可能失效，届时需要更新脚本中的加密密钥（`KEY` / `IV`）或接口路径。所有请求均以用户账号登录身份发起，计费逻辑与网页手动操作一致。
 
 ---
 
@@ -223,7 +225,10 @@ User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Geck
 - **yt-dlp 在 B站不可用**：B站返回 HTTP 412。路径 B 只用 B站官方 API。
 - **B站 AI 字幕不是立即可用**：长视频上传后可能需 1-2 天才能生成。
 - **Whisper 模型首次下载**：约 139MB（base），建议设 `HF_ENDPOINT=https://hf-mirror.com` 加速。
-- **TranscriptGenerate 加密密钥可能变化**：网站前端更新后需同步更新 `KEY` / `IV`。
+- **TranscriptGenerate 使用内部 API（非官方）**：本工具逆向的是网站前端调用的 `/prod-api` 接口（登录 → createTask → queryTask），非官方公开 API。网站改版可能导致接口失效。
+- **加密密钥可能变化**：请求体使用 AES-128-CBC 加密，密钥 `KEY` / `IV` 硬编码在 `transcriptgenerate_transcribe.mjs` 中。网站前端更新后需同步更新。
+- **账号登录方式**：使用邮箱密码登录获取 token，所有后续请求携带 Bearer token。凭证安全由用户自行管理（建议通过环境变量传入，不要写死在代码中）。
+- **后备方案**：如果内部 API 完全失效，可改用 Playwright 模拟浏览器登录 + 页面操作方式获取转写内容（未实现，作为 v2 后备方案）。
 
 ---
 
